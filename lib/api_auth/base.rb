@@ -33,15 +33,22 @@ module ApiAuth
     # Determines if the request is authentic given the request and the client's
     # secret key. Returns true if the request is authentic and false otherwise.
     def authentic?(request, secret_key, options = {})
-      return false if secret_key.nil?
+      if secret_key.nil?
+        Rollbar.warn 'Secret key not set'
+        return false
+      end
+
       options = { :override_http_method => nil }.merge(options)
 
       headers = Headers.new(request)
       if headers.md5_mismatch?
+        Rollbar.warn 'MD5 mismatch'
         false
       elsif !signatures_match?(headers, secret_key, options)
+        Rollbar.warn 'Signatures mismatch'
         false
       elsif request_too_old?(headers)
+        Rollbar.warn 'Request too old'
         false
       else
         true
